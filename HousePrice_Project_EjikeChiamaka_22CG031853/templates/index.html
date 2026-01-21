@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>House Price Prediction System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏠 House Price Prediction System</h1>
+            <p>Predict house prices using machine learning</p>
+        </div>
+
+        <div class="content">
+            <div class="form-section">
+                <h2>Enter Property Details</h2>
+                <form id="predictionForm">
+                    <div class="form-group">
+                        <label for="OverallQual">Overall Quality (1-10)</label>
+                        <input 
+                            type="number" 
+                            id="OverallQual" 
+                            name="OverallQual" 
+                            min="1" 
+                            max="10" 
+                            step="1" 
+                            required
+                            placeholder="e.g., 7"
+                        >
+                        <small>Rate the overall material and finish quality</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="GrLivArea">Living Area (sq ft)</label>
+                        <input 
+                            type="number" 
+                            id="GrLivArea" 
+                            name="GrLivArea" 
+                            min="0" 
+                            step="1" 
+                            required
+                            placeholder="e.g., 2000"
+                        >
+                        <small>Gross living area above ground in square feet</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="TotalBsmtSF">Basement Area (sq ft)</label>
+                        <input 
+                            type="number" 
+                            id="TotalBsmtSF" 
+                            name="TotalBsmtSF" 
+                            min="0" 
+                            step="1" 
+                            required
+                            placeholder="e.g., 1000"
+                        >
+                        <small>Total square feet of basement area</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="GarageCars">Garage Capacity (cars)</label>
+                        <input 
+                            type="number" 
+                            id="GarageCars" 
+                            name="GarageCars" 
+                            min="0" 
+                            max="5" 
+                            step="1" 
+                            required
+                            placeholder="e.g., 2"
+                        >
+                        <small>Number of cars the garage can hold</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="FullBath">Full Bathrooms</label>
+                        <input 
+                            type="number" 
+                            id="FullBath" 
+                            name="FullBath" 
+                            min="0" 
+                            max="10" 
+                            step="1" 
+                            required
+                            placeholder="e.g., 2"
+                        >
+                        <small>Number of full bathrooms</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="YearBuilt">Year Built</label>
+                        <input 
+                            type="number" 
+                            id="YearBuilt" 
+                            name="YearBuilt" 
+                            min="1800" 
+                            max="2100" 
+                            step="1" 
+                            required
+                            placeholder="e.g., 2010"
+                        >
+                        <small>Original construction year</small>
+                    </div>
+
+                    <button type="submit" class="submit-btn">Predict Price</button>
+                </form>
+            </div>
+
+            <div class="results-section">
+                <h2>Prediction Result</h2>
+                <div id="resultsContainer" class="hidden">
+                    <div class="result-box">
+                        <div class="result-label">Predicted House Price</div>
+                        <div class="result-price" id="predictedPrice">$0.00</div>
+                        <div class="result-confidence">
+                            <span>Prediction Std Dev: </span>
+                            <span id="confidenceValue">0.00</span>
+                        </div>
+                        <div class="result-details" id="resultDetails"></div>
+                    </div>
+                </div>
+
+                <div id="errorContainer" class="hidden">
+                    <div class="error-box">
+                        <span class="error-icon">⚠️</span>
+                        <div id="errorMessage"></div>
+                    </div>
+                </div>
+
+                <div id="loadingContainer" class="hidden">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Making prediction...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>House Price Prediction System © 2026 | Powered by Random Forest Regression</p>
+            <p><small>Dataset: House Prices Advanced Regression Techniques</small></p>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('predictionForm');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const errorContainer = document.getElementById('errorContainer');
+        const loadingContainer = document.getElementById('loadingContainer');
+        const predictedPriceDiv = document.getElementById('predictedPrice');
+        const confidenceValueSpan = document.getElementById('confidenceValue');
+        const errorMessageDiv = document.getElementById('errorMessage');
+        const resultDetailsDiv = document.getElementById('resultDetails');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Clear previous results
+            resultsContainer.classList.add('hidden');
+            errorContainer.classList.add('hidden');
+            loadingContainer.classList.remove('hidden');
+
+            try {
+                // Collect form data
+                const formData = new FormData(form);
+                const data = {
+                    OverallQual: parseFloat(formData.get('OverallQual')),
+                    GrLivArea: parseFloat(formData.get('GrLivArea')),
+                    TotalBsmtSF: parseFloat(formData.get('TotalBsmtSF')),
+                    GarageCars: parseFloat(formData.get('GarageCars')),
+                    FullBath: parseFloat(formData.get('FullBath')),
+                    YearBuilt: parseFloat(formData.get('YearBuilt'))
+                };
+
+                // Validate data
+                for (let key in data) {
+                    if (isNaN(data[key])) {
+                        throw new Error(`Invalid value for ${key}`);
+                    }
+                }
+
+                // Make prediction request
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                loadingContainer.classList.add('hidden');
+
+                if (result.success) {
+                    // Display results
+                    predictedPriceDiv.textContent = `$${result.predicted_price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                    confidenceValueSpan.textContent = `$${result.confidence_std.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+                    // Display input summary
+                    let detailsHTML = '<div class="input-summary"><strong>Input Summary:</strong><ul>';
+                    for (let feature in result.input_values) {
+                        detailsHTML += `<li><strong>${feature}:</strong> ${result.input_values[feature]}</li>`;
+                    }
+                    detailsHTML += '</ul></div>';
+                    resultDetailsDiv.innerHTML = detailsHTML;
+
+                    resultsContainer.classList.remove('hidden');
+                } else {
+                    // Display error
+                    errorMessageDiv.textContent = result.error || 'An error occurred during prediction';
+                    errorContainer.classList.remove('hidden');
+                }
+            } catch (error) {
+                loadingContainer.classList.add('hidden');
+                errorMessageDiv.textContent = `Error: ${error.message}`;
+                errorContainer.classList.remove('hidden');
+            }
+        });
+
+        // Log when page loads to confirm app is running
+        window.addEventListener('load', () => {
+            console.log('House Price Prediction System loaded successfully');
+            // Optional: Fetch available features from backend
+            fetch('/features')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('Model features:', data.features);
+                    }
+                })
+                .catch(err => console.log('Could not fetch features:', err));
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+Name: Ejike Chiamaka
+Matric Number: 22CG031853
+Machine Learning Algorithm Used: Random Forest Regressor
+Model Persistence Method: Joblib
+Live URL of the Hosted Application: [ADD YOUR HOSTED URL HERE - e.g., https://your-app.render.com]
+GitHub Repository Link: [ADD YOUR GITHUB REPO LINK HERE - e.g., https://github.com/yourusername/HousePrice_Project_EjikeChiamaka_22CG031853]
